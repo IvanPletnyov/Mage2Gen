@@ -26,6 +26,7 @@ class ViewModelSnippet(Snippet):
 	
 	It is possible to set the viewModel argument with a layout update.
 	"""
+	snippet_label = 'View model'
 
 	def add(self, classname, methodname, layout_handle, reference_name='content', extra_params=None):
 		# Add class

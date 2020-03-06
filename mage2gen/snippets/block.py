@@ -41,6 +41,8 @@ class BlockSnippet(Snippet):
 
 	"""
 
+	snippet_label = 'Block'
+
 	SCOPE_FRONTEND = 'frontend'
 	SCOPE_ADMINHTML = 'backend'
 

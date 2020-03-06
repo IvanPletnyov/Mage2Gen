@@ -8,7 +8,6 @@ from mage2gen import Snippet, SnippetParam
 from mage2gen.utils import upperfirst
 from collections import defaultdict, OrderedDict
 
-
 class Mage2Gen(cmd.Cmd):
 	prompt = '(Mage2Gen) '
 
@@ -105,9 +104,6 @@ class Mage2Gen(cmd.Cmd):
 			for param in SnippetClass.params():
 				params[param.name] = self.ask_param_input(param)
 			self._module_snippets[SnippetClass].append(params)
-
-	def complete_add(self, text, line, begidx, endidx):
-		return [s for s in self._snippets if s.startswith(text)]
 
 	def do_remove(self, line):
 		"""Remove a snippet to module"""

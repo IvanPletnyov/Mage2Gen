@@ -46,6 +46,8 @@ class ModelSnippet(Snippet):
 	**Model ID field**:	The snippet will auto add the model id field to the database table, the field name is <model_name>_id.
 	"""
 
+	snippet_label = 'Model'
+
 	FIELD_TYPE_CHOISES = [
 		('boolean','Boolean'),
 		('smallint','Smallint'),
@@ -86,15 +88,18 @@ class ModelSnippet(Snippet):
 		model_id_capitalized = ''.join(upperfirst(item) for item in split_model_id)
 		model_id_capitalized_after = model_id_capitalized[0].lower() + model_id_capitalized[1:]
 
-		collection_model_class_name = "\\{}\\{}\\Model\\ResourceModel\\{}\\Collection".format(self._module.package,
+		collection_model_namespace = "{}\\{}\\Model\\ResourceModel\\{}\\Collection".format(self._module.package,
 			self._module.name,
 		  	model_name_capitalized.replace('_', '\\')
 		)
+		collection_model_class_name = "\\{}".format(collection_model_namespace)
 
-		extension_interface_class_name = "\\{}\\{}\\Api\\Data\\{}ExtensionInterface".format(self._module.package,
+		extension_interface_namespace = "{}\\{}\\Api\\Data\\{}ExtensionInterface".format(self._module.package,
 		  	self._module.name,
 		  	model_name_capitalized.replace('_', '\\')
 		)
+		extension_interface_class_name = "\\{}".format(extension_interface_namespace)
+		extension_interface_class = "{}ExtensionInterface".format(model_name_capitalized.replace('_', '\\'))
 
 		if field_type == 'boolean':
 			field_element_type = 'checkbox'
@@ -134,7 +139,7 @@ class ModelSnippet(Snippet):
 		if not extra_params.get('nullable'):
 			attributes['nullable'] = 'false'
 			required = not attributes['nullable']
-		if field_type in {'mallint','integer','bigint'}:
+		if field_type in {'smallint','integer','bigint'}:
 			attributes['identity'] = 'false'
 			if extra_params.get('identity'):
 				attributes['identity'] = 'true'
@@ -146,6 +151,8 @@ class ModelSnippet(Snippet):
 			attributes['scale'] = extra_params.get('scale')
 		if extra_params.get('field_size'):
 			attributes['length'] = '{}'.format(extra_params.get('field_size'))
+		if extra_params.get('comment'):
+			attributes['comment'] = extra_params.get('comment')
 		elif field_type == 'decimal':
 			attributes['scale'] = '4'
 			attributes['precision'] = '12'
@@ -183,78 +190,86 @@ class ModelSnippet(Snippet):
 			])
 		]))
 
-		# Create resource class
-		resource_model_class = Phpclass('Model\\ResourceModel\\' + model_name_capitalized.replace('_', '\\'), extends='\\Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb')
-		resource_model_class.add_method(Phpmethod('_construct',
-			access=Phpmethod.PROTECTED,
-			body="$this->_init('{}', '{}');".format(model_table, model_id),
-			docstring=[
-				'Define resource model',
-				'',
-				'@return void',
-				]))
-		self.add_class(resource_model_class)
 
 		# Create api data interface class
 		api_data_class =  InterfaceClass('Api\\Data\\' + model_name_capitalized.replace('_', '\\') + 'Interface',
 			extends='\\Magento\\Framework\\Api\\ExtensibleDataInterface',
 			attributes=[
-				"const {} = '{}';".format(field_name.upper(),field_name),"const {} = '{}';".format(model_id.upper(),model_id)
+				"public const {} = '{}';".format(field_name.upper(),field_name), "public const {} = '{}';".format(model_id.upper(),model_id)
 			])
 
-		api_data_class.add_method(InterfaceMethod('get'+model_id_capitalized,docstring=['Get {}'.format(model_id),'@return {}'.format('string|null')]))
+		api_data_class.add_method(InterfaceMethod('get'+model_id_capitalized,docstring=['Get {}'.format(model_id), '', '@return {}'.format('string|null')]))
 		self.add_class(api_data_class)
 
-		api_data_class.add_method(InterfaceMethod('set'+model_id_capitalized,params=['${}'.format(model_id_capitalized_after)],docstring=['Set {}'.format(model_id),'@param string ${}'.format(model_id_capitalized_after),'@return \{}'.format(api_data_class.class_namespace)]))
+		api_data_class.add_method(InterfaceMethod('set'+model_id_capitalized,params=['${}'.format(model_id_capitalized_after)],docstring=['Set {}'.format(model_id), '', '@param string ${}'.format(model_id_capitalized_after),'@return \{}'.format(api_data_class.class_namespace)]))
 		self.add_class(api_data_class)
 
-		api_data_class.add_method(InterfaceMethod('get'+field_name_capitalized,docstring=['Get {}'.format(field_name),'@return {}'.format('string|null')]))
+		api_data_class.add_method(InterfaceMethod('get'+field_name_capitalized,docstring=['Get {}'.format(field_name), '', '@return {}'.format('string|null')]))
 		self.add_class(api_data_class)
 
-		api_data_class.add_method(InterfaceMethod('set'+field_name_capitalized,params=['${}'.format(lowerfirst(field_name_capitalized))],docstring=['Set {}'.format(field_name),'@param string ${}'.format(lowerfirst(field_name_capitalized)),'@return \{}'.format(api_data_class.class_namespace)]))
+		api_data_class.add_method(InterfaceMethod('set'+field_name_capitalized,params=['${}'.format(lowerfirst(field_name_capitalized))],docstring=['Set {}'.format(field_name), '', '@param string ${}'.format(lowerfirst(field_name_capitalized)),'@return \{}'.format(api_data_class.class_namespace)]))
 		self.add_class(api_data_class)
 
-		api_data_class.add_method(InterfaceMethod('getExtensionAttributes', docstring=['Retrieve existing extension attributes object or create a new one.','@return ' + extension_interface_class_name + '|null']))
-		api_data_class.add_method(InterfaceMethod('setExtensionAttributes', params=[extension_interface_class_name + ' $extensionAttributes'], docstring=['Set an extension attributes object.','@param ' + extension_interface_class_name +' $extensionAttributes','@return $this']))
+		api_data_class.add_method(InterfaceMethod('getExtensionAttributes', docstring=['Retrieve existing extension attributes object or create a new one.', '', '@return ' + extension_interface_class_name + '|null']))
+		api_data_class.add_method(InterfaceMethod('setExtensionAttributes', params=[extension_interface_class_name + ' $extensionAttributes'], docstring=['Set an extension attributes object.', '', '@param ' + extension_interface_class_name +' $extensionAttributes','@return $this']))
 		self.add_class(api_data_class)
 
+		# Create resource class
+		resource_model_class = Phpclass(
+			'Model\\ResourceModel\\' + model_name_capitalized.replace('_', '\\'),
+			extends='AbstractDb',
+			dependencies = [
+				'Magento\\Framework\\Model\\ResourceModel\\Db\\AbstractDb',
+				api_data_class.class_namespace
+			]
+		)
+		resource_model_class.add_method(Phpmethod('_construct',
+			access=Phpmethod.PROTECTED,
+			body="$this->_init('{}', {}::{});".format(model_table, api_data_class.class_name, model_id.upper()),
+			docstring=['@inheritDoc']))
+		self.add_class(resource_model_class)
 
 		# Create api data interface class
 		api_data_search_class =  InterfaceClass('Api\\Data\\' + model_name_capitalized.replace('_', '\\') + 'SearchResultsInterface',extends='\Magento\Framework\Api\SearchResultsInterface')
-		api_data_search_class.add_method(InterfaceMethod('getItems',docstring=['Get {} list.'.format(model_name),'@return \{}[]'.format(api_data_class.class_namespace)]))
-		api_data_search_class.add_method(InterfaceMethod('setItems',params=['array $items'],docstring=['Set {} list.'.format(field_name),'@param \{}[] $items'.format(api_data_class.class_namespace),'@return $this']))
+		api_data_search_class.add_method(InterfaceMethod('getItems',docstring=['Get {} list.'.format(model_name), '', '@return \{}[]'.format(api_data_class.class_namespace)]))
+		api_data_search_class.add_method(InterfaceMethod('setItems',params=['array $items'],docstring=['Set {} list.'.format(field_name), '', '@param \{}[] $items'.format(api_data_class.class_namespace),'@return $this']))
 		self.add_class(api_data_search_class)
 
 		# Create api data interface class
-		api_repository_class =  InterfaceClass('Api\\' + model_name_capitalized.replace('_', '\\') + 'RepositoryInterface',dependencies=['Magento\Framework\Api\SearchCriteriaInterface'])
-		api_repository_class.add_method(InterfaceMethod('save',params=['\{} ${}'.format(api_data_class.class_namespace,model_name_capitalized_after)],docstring=['Save {}'.format(model_name),'@param \{} ${}'.format(api_data_class.class_namespace,model_name_capitalized_after),'@return \{}'.format(api_data_class.class_namespace),'@throws \Magento\Framework\Exception\LocalizedException']))
-		api_repository_class.add_method(InterfaceMethod('get',params=['${}'.format(model_id_capitalized_after)],docstring=['Retrieve {}'.format(model_name),'@param string ${}'.format(model_id_capitalized_after),'@return \{}'.format(api_data_class.class_namespace),'@throws \Magento\Framework\Exception\LocalizedException']))
-		api_repository_class.add_method(InterfaceMethod('getList',params= ['\Magento\Framework\Api\SearchCriteriaInterface $searchCriteria'], docstring=['Retrieve {} matching the specified criteria.'.format(model_name),'@param \Magento\Framework\Api\SearchCriteriaInterface $searchCriteria','@return \{}'.format(api_data_search_class.class_namespace),'@throws \Magento\Framework\Exception\LocalizedException']))
-		api_repository_class.add_method(InterfaceMethod('delete',params=['\{} ${}'.format(api_data_class.class_namespace,model_name_capitalized_after)],docstring=['Delete {}'.format(model_name),'@param \{} ${}'.format(api_data_class.class_namespace,model_name_capitalized_after),'@return bool true on success','@throws \Magento\Framework\Exception\LocalizedException']))
-		api_repository_class.add_method(InterfaceMethod('deleteById',params=['${}'.format(model_id_capitalized_after)],docstring=['Delete {} by ID'.format(model_name),'@param string ${}'.format(model_id_capitalized_after),'@return bool true on success','@throws \\Magento\\Framework\\Exception\\NoSuchEntityException','@throws \\Magento\\Framework\\Exception\\LocalizedException']))
+		api_repository_class =  InterfaceClass('Api\\' + model_name_capitalized.replace('_', '\\') + 'RepositoryInterface')
+		api_repository_class.add_method(InterfaceMethod('save',params=['\{} ${}'.format(api_data_class.class_namespace,model_name_capitalized_after)],docstring=['Save {}'.format(model_name), '', '@param \{} ${}'.format(api_data_class.class_namespace,model_name_capitalized_after),'@return \{}'.format(api_data_class.class_namespace),'@throws \Magento\Framework\Exception\LocalizedException']))
+		api_repository_class.add_method(InterfaceMethod('get',params=['${}'.format(model_id_capitalized_after)],docstring=['Retrieve {}'.format(model_name), '', '@param string ${}'.format(model_id_capitalized_after),'@return \{}'.format(api_data_class.class_namespace),'@throws \Magento\Framework\Exception\LocalizedException']))
+		api_repository_class.add_method(InterfaceMethod('delete',params=['\{} ${}'.format(api_data_class.class_namespace,model_name_capitalized_after)],docstring=['Delete {}'.format(model_name), '', '@param \{} ${}'.format(api_data_class.class_namespace,model_name_capitalized_after),'@return bool true on success','@throws \Magento\Framework\Exception\LocalizedException']))
+		api_repository_class.add_method(InterfaceMethod('deleteById',params=['${}'.format(model_id_capitalized_after)],docstring=['Delete {} by ID'.format(model_name), '', '@param string ${}'.format(model_id_capitalized_after),'@return bool true on success','@throws \\Magento\\Framework\\Exception\\NoSuchEntityException','@throws \\Magento\\Framework\\Exception\\LocalizedException']))
+		api_repository_class.add_method(InterfaceMethod('getList',params= ['\Magento\Framework\Api\SearchCriteriaInterface $searchCriteria'], docstring=['Retrieve {} matching the specified criteria.'.format(model_name), '', '@param \Magento\Framework\Api\SearchCriteriaInterface $searchCriteria','@return \{}'.format(api_data_search_class.class_namespace),'@throws \Magento\Framework\Exception\LocalizedException']))
 		self.add_class(api_repository_class)
 
 		# Create model class
 		model_class = Phpclass('Model\\' + model_name_capitalized.replace('_', '\\'),
 			dependencies=[
+				'Magento\Framework\Model\Context',
+				'Magento\Framework\Registry',
 				api_data_class.class_namespace,
 				api_data_class.class_namespace + 'Factory',
 				'Magento\\Framework\\Api\\DataObjectHelper',
+				'{} as {}'.format(resource_model_class.class_namespace, resource_model_class.class_name + 'Resource'),
+				collection_model_namespace,
+				'Magento\\Framework\\Model\\AbstractModel'
 			],
-			extends='\\Magento\\Framework\\Model\\AbstractModel',
+			extends='AbstractModel',
 			attributes=[
-				'protected ${}DataFactory;\n'.format(model_name.lower()),
-				'protected $dataObjectHelper;\n',
-				'protected $_eventPrefix = \'{}\';'.format(model_table)
+				'/**\n\t * @var {}\n\t */\n\tprivate ${}DataFactory;'.format(model_name_capitalized + 'InterfaceFactory', model_name.lower()),
+				'/**\n\t * @var DataObjectHelper\n\t */\n\tprivate $dataObjectHelper;',
+				"/**\n\t * @var string\n\t */\n\tprotected $_eventPrefix = '{}';".format(model_table)
 			])
 		model_class.add_method(Phpmethod('__construct', access=Phpmethod.PUBLIC,
 			params=[
-				"\Magento\Framework\Model\Context $context",
-				"\Magento\Framework\Registry $registry",
+				"Context $context",
+				"Registry $registry",
 				"{}InterfaceFactory ${}DataFactory".format(model_name_capitalized, model_name.lower()),
 				"DataObjectHelper $dataObjectHelper",
-				"\\" + resource_model_class.class_namespace + " $resource",
-				collection_model_class_name + " $resourceCollection",
+				resource_model_class.class_name + 'Resource' + " $resource",
+				'Collection $resourceCollection',
 				"array $data = []",
 			],
 			body="""$this->{variable}DataFactory = ${variable}DataFactory;
@@ -262,12 +277,12 @@ class ModelSnippet(Snippet):
 			parent::__construct($context, $registry, $resource, $resourceCollection, $data);
 			""".format(variable=model_name.lower()),
 			docstring=[
-				"@param \Magento\Framework\Model\Context $context",
-				"@param \Magento\Framework\Registry $registry",
+				"@param Context $context",
+				"@param Registry $registry",
 				"@param {}InterfaceFactory ${}DataFactory".format(model_name_capitalized, model_name.lower()),
 				"@param DataObjectHelper $dataObjectHelper",
-				"@param \\" + resource_model_class.class_namespace + " $resource",
-				"@param " + collection_model_class_name + " $resourceCollection",
+				"@param " + resource_model_class.class_name + 'Resource' + " $resource",
+				"@param Collection $resourceCollection",
 				"@param array $data",
 			]
 		))
@@ -285,6 +300,7 @@ class ModelSnippet(Snippet):
 			""".format(variable=model_name.lower(), variable_upper=model_name_capitalized),
 			docstring=[
 				"Retrieve {} model with {} data".format(model_name.lower(), model_name.lower()),
+				'',
 				"@return {}Interface".format(model_name_capitalized),
 			]
 		))
@@ -292,19 +308,20 @@ class ModelSnippet(Snippet):
 
 		# Create collection
 		collection_model_class = Phpclass('Model\\ResourceModel\\' + model_name_capitalized.replace('_', '\\') + '\\Collection',
-				extends='\\Magento\\Framework\\Model\\ResourceModel\\Db\\Collection\\AbstractCollection',
+				dependencies=[
+					'Magento\\Framework\\Model\\ResourceModel\\Db\\Collection\\AbstractCollection',
+					model_class.class_namespace,
+					'{} as {}'.format(resource_model_class.class_namespace, resource_model_class.class_name + 'Resource')
+				],
+				extends='AbstractCollection',
 				attributes=[
 					"/**\n\t * @var string\n\t */\n\tprotected $_idFieldName = '{}';".format(model_id),
 				])
 		collection_model_class.add_method(Phpmethod('_construct',
 			access=Phpmethod.PROTECTED,
-			body="$this->_init(\n    \{}::class,\n    \{}::class\n);".format(
-				model_class.class_namespace ,resource_model_class.class_namespace),
-			docstring=[
-				'Define resource model',
-				'',
-				'@return void',
-				]))
+			body="$this->_init({}::class, {}::class);".format(
+				model_class.class_name ,resource_model_class.class_name + 'Resource'),
+			docstring=['@inheritDoc']))
 		self.add_class(collection_model_class)
 
 		# Create Repository Class
@@ -312,44 +329,35 @@ class ModelSnippet(Snippet):
 			dependencies=[
 				api_repository_class.class_namespace,
 				api_data_search_class.class_namespace + 'Factory',
-				api_data_class.class_namespace + 'Factory',
-				'Magento\\Framework\\Api\\DataObjectHelper',
 				'Magento\\Framework\\Exception\\CouldNotDeleteException',
 				'Magento\\Framework\\Exception\\NoSuchEntityException',
 				'Magento\\Framework\\Exception\\CouldNotSaveException',
-				'Magento\\Framework\\Reflection\\DataObjectProcessor',
 				'Magento\\Framework\\Api\\SearchCriteria\\CollectionProcessorInterface',
 				resource_model_class.class_namespace + ' as Resource' + model_name_capitalized,
 				collection_model_class.class_namespace + 'Factory as '+ model_name_capitalized +'CollectionFactory',
-				'Magento\\Store\\Model\\StoreManagerInterface',
 				'Magento\\Framework\\Api\\ExtensionAttribute\\JoinProcessorInterface',
-				'Magento\\Framework\\Api\\ExtensibleDataObjectConverter'
+				'Magento\\Framework\\Api\\ExtensibleDataObjectConverter',
+				api_data_class.class_namespace,
+				api_data_class.class_namespace + 'Factory',
+				'Magento\Framework\Api\SearchCriteriaInterface'
 			],
 			attributes=[
-				'protected $resource;\n',
-				'protected ${}Factory;\n'.format(model_name_capitalized_after),
-				'protected ${}CollectionFactory;\n'.format(model_name_capitalized_after),
-    			'protected $searchResultsFactory;\n',
-    			'protected $dataObjectHelper;\n',
-    			'protected $dataObjectProcessor;\n',
-    			'protected $data{}Factory;\n'.format(model_name_capitalized),
-				'protected $extensionAttributesJoinProcessor;\n',
-    			'private $storeManager;\n',
-				'private $collectionProcessor;\n',
-				'protected $extensibleDataObjectConverter;'
+				'/**\n\t * @var {}\n\t */\n\tprivate $resource;'.format('Resource' + model_name_capitalized),
+				'/**\n\t * @var {}\n\t */\n\tprivate ${}Factory;'.format(api_data_class.class_name + 'Factory', model_name_capitalized_after),
+				'/**\n\t * @var {}\n\t */\n\tprivate ${}CollectionFactory;'.format(model_name_capitalized + 'CollectionFactory', model_name_capitalized_after),
+    			'/**\n\t * @var {}\n\t */\n\tprivate $searchResultsFactory;'.format(api_data_search_class.class_namespace + 'Factory'),
+				'/**\n\t * @var JoinProcessorInterface\n\t */\n\tprivate $extensionAttributesJoinProcessor;',
+				'/**\n\t * @var CollectionProcessorInterface\n\t */\n\tprivate $collectionProcessor;',
+				'/**\n\t * @var ExtensibleDataObjectConverter\n\t */\n\tprivate $extensibleDataObjectConverter;'
 			],
 			implements=[model_name_capitalized.replace('_', '\\') + 'RepositoryInterface']
 		)
 		model_repository_class.add_method(Phpmethod('__construct', access=Phpmethod.PUBLIC,
 			params=[
 				"Resource{} $resource".format(model_name_capitalized),
-		        "{}Factory ${}Factory".format(model_name_capitalized,model_name_capitalized_after),
-		        "{}InterfaceFactory $data{}Factory".format(model_name_capitalized,model_name_capitalized),
+		        "{}Factory ${}Factory".format(api_data_class.class_name, model_name_capitalized_after),
 		        "{}CollectionFactory ${}CollectionFactory".format(model_name_capitalized,model_name_capitalized_after),
 		        "{}SearchResultsInterfaceFactory $searchResultsFactory".format(model_name_capitalized),
-		        "DataObjectHelper $dataObjectHelper",
-		        "DataObjectProcessor $dataObjectProcessor",
-		        "StoreManagerInterface $storeManager",
 		        "CollectionProcessorInterface $collectionProcessor",
 				"JoinProcessorInterface $extensionAttributesJoinProcessor",
 				"ExtensibleDataObjectConverter $extensibleDataObjectConverter"
@@ -358,41 +366,24 @@ class ModelSnippet(Snippet):
 			$this->{variable}Factory = ${variable}Factory;
 			$this->{variable}CollectionFactory = ${variable}CollectionFactory;
 			$this->searchResultsFactory = $searchResultsFactory;
-			$this->dataObjectHelper = $dataObjectHelper;
-			$this->data{variable_upper}Factory = $data{variable_upper}Factory;
-			$this->dataObjectProcessor = $dataObjectProcessor;
-			$this->storeManager = $storeManager;
 			$this->collectionProcessor = $collectionProcessor;
 			$this->extensionAttributesJoinProcessor = $extensionAttributesJoinProcessor;
 			$this->extensibleDataObjectConverter = $extensibleDataObjectConverter;
 			""".format(variable=model_name_capitalized_after,variable_upper=model_name_capitalized),
 			docstring=[
 				"@param Resource{} $resource".format(model_name_capitalized),
-				"@param {}Factory ${}Factory".format(model_name_capitalized,model_name_capitalized_after),
-				"@param {}InterfaceFactory $data{}Factory".format(model_name_capitalized,model_name_capitalized),
+				"@param {}Factory ${}Factory".format(model_name_capitalized, model_name_capitalized_after),
 				"@param {}CollectionFactory ${}CollectionFactory".format(model_name_capitalized,model_name_capitalized_after),
 				"@param {}SearchResultsInterfaceFactory $searchResultsFactory".format(model_name_capitalized),
-				"@param DataObjectHelper $dataObjectHelper",
-				"@param DataObjectProcessor $dataObjectProcessor",
-				"@param StoreManagerInterface $storeManager",
 				"@param CollectionProcessorInterface $collectionProcessor",
 				"@param JoinProcessorInterface $extensionAttributesJoinProcessor",
 				"@param ExtensibleDataObjectConverter $extensibleDataObjectConverter",
 			]
 		))
 		model_repository_class.add_method(Phpmethod('save', access=Phpmethod.PUBLIC,
-			params=['\\' + api_data_class.class_namespace + ' $' + model_name_capitalized_after],
-			body="""/* if (empty(${variable}->getStoreId())) {{
-					    $storeId = $this->storeManager->getStore()->getId();
-					    ${variable}->setStoreId($storeId);
-					}} */
-					
-					${variable}Data = $this->extensibleDataObjectConverter->toNestedArray(
-					    ${variable},
-					    [],
-					    \{data_interface}::class
-					);
-					
+			params=[api_data_class.class_name + ' $' + model_name_capitalized_after],
+			body="""
+					${variable}Data = $this->extensibleDataObjectConverter->toNestedArray(${variable}, [], {data_interface}::class);
 					${variable}Model = $this->{variable}Factory->create()->setData(${variable}Data);
 					
 					try {{
@@ -403,9 +394,10 @@ class ModelSnippet(Snippet):
 					        $exception->getMessage()
 					    ));
 					}}
+					
 					return ${variable}Model->getDataModel();
-			""".format(data_interface=api_data_class.class_namespace, variable=model_name_capitalized_after),
-			docstring=['{@inheritdoc}']
+			""".format(data_interface=api_data_class.class_name, variable=model_name_capitalized_after),
+			docstring=['@inheritDoc']
 		))
 		model_repository_class.add_method(Phpmethod('get', access=Phpmethod.PUBLIC,
 			params=['${}Id'.format(model_name_capitalized_after)],
@@ -414,17 +406,41 @@ class ModelSnippet(Snippet):
 			if (!${variable}->getId()) {{
 			    throw new NoSuchEntityException(__('{model_name} with id "%1" does not exist.', ${variable}Id));
 			}}
-			return ${variable}->getDataModel();
+			
+			return ${variable};
 			""".format(variable=model_name_capitalized_after,model_name=model_name),
-			docstring=['{@inheritdoc}']
+			docstring=['@inheritDoc']
+		))
+		model_repository_class.add_method(Phpmethod('delete', access=Phpmethod.PUBLIC,
+			params=['{} ${}'.format(api_data_class.class_name, model_name_capitalized_after)],
+			body="""try {{
+						    ${variable}Model = $this->{variable}Factory->create();
+						    $this->resource->load(${variable}Model, ${variable}->get{model_id}());
+						    $this->resource->delete(${variable}Model);
+					}} catch (\Exception $exception) {{
+					    throw new CouldNotDeleteException(__(
+					        'Could not delete the {model_name}: %1',
+					        $exception->getMessage()
+					    ));
+					}}
+					
+					return true;
+			""".format(variable=model_name_capitalized_after,model_name=model_name,model_id=model_id_capitalized),
+			docstring=['@inheritDoc']
+		))
+		model_repository_class.add_method(Phpmethod('deleteById', access=Phpmethod.PUBLIC,
+			params=['${}Id'.format(model_name_capitalized_after)],
+			body="""return $this->delete($this->get(${variable}Id));
+			""".format(variable=model_name_capitalized_after,model_name=model_name),
+			docstring=['@inheritDoc']
 		))
 		model_repository_class.add_method(Phpmethod('getList', access=Phpmethod.PUBLIC,
-			params=['\Magento\Framework\Api\SearchCriteriaInterface $criteria'],
+			params=['SearchCriteriaInterface $criteria'],
 			body="""$collection = $this->{variable}CollectionFactory->create();
 			
 					$this->extensionAttributesJoinProcessor->process(
 					    $collection,
-					    \{data_interface}::class
+					    {data_interface}::class
 					);
 			
 					$this->collectionProcessor->process($criteria, $collection);
@@ -439,77 +455,56 @@ class ModelSnippet(Snippet):
 					
 					$searchResults->setItems($items);
 					$searchResults->setTotalCount($collection->getSize());
+					
 					return $searchResults;
-			""".format(variable=model_name_capitalized_after,data_interface=api_data_class.class_namespace,variable_upper=model_name_capitalized),
-			docstring=['{@inheritdoc}']
-		))
-		model_repository_class.add_method(Phpmethod('delete', access=Phpmethod.PUBLIC,
-			params=['\{} ${}'.format(api_data_class.class_namespace,model_name_capitalized_after)],
-			body="""try {{
-						    ${variable}Model = $this->{variable}Factory->create();
-						    $this->resource->load(${variable}Model, ${variable}->get{model_id}());
-						    $this->resource->delete(${variable}Model);
-					}} catch (\Exception $exception) {{
-					    throw new CouldNotDeleteException(__(
-					        'Could not delete the {model_name}: %1',
-					        $exception->getMessage()
-					    ));
-					}}
-					return true;
-			""".format(variable=model_name_capitalized_after,model_name=model_name,model_id=model_id_capitalized),
-			docstring=['{@inheritdoc}']
-		))
-		model_repository_class.add_method(Phpmethod('deleteById', access=Phpmethod.PUBLIC,
-			params=['${}Id'.format(model_name_capitalized_after)],
-			body="""return $this->delete($this->get(${variable}Id));
-			""".format(variable=model_name_capitalized_after,model_name=model_name),
-			docstring=['{@inheritdoc}']
+			""".format(variable=model_name_capitalized_after,data_interface=api_data_class.class_name,variable_upper=model_name_capitalized),
+			docstring=['@inheritDoc']
 		))
 		self.add_class(model_repository_class)
 
 		# Create Data Model Class
 		data_model_class = Phpclass('Model\\Data\\' + model_name_capitalized.replace('_', '\\'),
-			dependencies=[api_data_class.class_namespace],
-			extends='\\Magento\\Framework\\Api\\AbstractExtensibleObject',
+			dependencies=[api_data_class.class_namespace, 'Magento\\Framework\\Api\\AbstractExtensibleObject', extension_interface_namespace],
+			extends='AbstractExtensibleObject',
 			implements=[
 				api_data_class.class_name
 			])
 
 		data_model_class.add_method(Phpmethod('get' + model_id_capitalized,
-			docstring=['Get {}'.format(model_id),'@return {}'.format('string|null')],
+			docstring=['Get {}'.format(model_id), '', '@return {}'.format('string|null')],
 			body="""return $this->_get({});
 			""".format('self::'+model_id.upper()),
 		))
 
 		data_model_class.add_method(Phpmethod('set' + model_id_capitalized,
 			params=['${}'.format(model_id_capitalized_after)],
-			docstring=['Set {}'.format(model_id),'@param string ${}'.format(model_id_capitalized_after),'@return \{}'.format(api_data_class.class_namespace)],
+			docstring=['Set {}'.format(model_id), '', '@param string ${}'.format(model_id_capitalized_after),'@return {}'.format(api_data_class.class_name)],
 			body="""return $this->setData({}, ${});
 			""".format('self::' + model_id.upper(), model_id_capitalized_after)
 		))
 
 		data_model_class.add_method(Phpmethod('get' + field_name_capitalized,
-			docstring=['Get {}'.format(field_name),'@return {}'.format('string|null')],
+			docstring=['Get {}'.format(field_name), '', '@return {}'.format('string|null')],
 			body="""return $this->_get({});
 			""".format('self::' + field_name.upper()),
 		))
 
 		data_model_class.add_method(Phpmethod('set' + field_name_capitalized,
 			params=['${}'.format(lowerfirst(field_name_capitalized))],
-			docstring=['Set {}'.format(field_name),'@param string ${}'.format(lowerfirst(field_name_capitalized)),'@return \{}'.format(api_data_class.class_namespace)],
+			docstring=['Set {}'.format(field_name), '', '@param string ${}'.format(lowerfirst(field_name_capitalized)),'@return {}'.format(api_data_class.class_name)],
 			body="""return $this->setData({}, ${});
 			""".format('self::' + field_name.upper(), lowerfirst(field_name_capitalized))
 		))
 
 		data_model_class.add_method(Phpmethod('getExtensionAttributes',
-			docstring=['Retrieve existing extension attributes object or create a new one.','@return '+ extension_interface_class_name +'|null'],
+			docstring=['Retrieve existing extension attributes object or create a new one.', '', '@return '+ extension_interface_class +'|null'],
 			body="""return $this->_getExtensionAttributes();
 			"""
 		))
 
 		data_model_class.add_method(Phpmethod('setExtensionAttributes',
-			params=[extension_interface_class_name + ' $extensionAttributes'],
-			docstring=['Set an extension attributes object.','@param ' + extension_interface_class_name +' $extensionAttributes','@return $this'],
+			params=[extension_interface_class + ' $extensionAttributes'],
+			docstring=['Set an extension attributes object.', '', '@param ' + extension_interface_class +' $extensionAttributes','@return $this'],
 			body="""return $this->_setExtensionAttributes($extensionAttributes);
 			"""
 		))
@@ -545,6 +540,20 @@ class ModelSnippet(Snippet):
 
 		if web_api | adminhtml_form | adminhtml_grid:
 			self.add_acl(model_name)
+
+	def get_type_hinting_by_field_type(self, field_type):
+		# Get type hinting by provided field type.
+
+		result = 'string'
+
+		if field_type == 'boolean':
+			result = 'bool'
+		elif field_type in {'smallint', 'integer', 'bigint'}:
+			result = 'int'
+		elif field_type == 'float':
+			result = 'float'
+
+		return result
 
 	def add_adminhtml_grid(self, model_name, field_name, model_table, model_id, collection_model_class, field_element_type, top_level_menu, adminhtml_form):
 		frontname = self.module_name.lower()

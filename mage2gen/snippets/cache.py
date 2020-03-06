@@ -22,6 +22,7 @@ class CacheSnippet(Snippet):
 	description = """
 	Custom Cache snippet
 	"""
+	snippet_label = 'Cache'
 
 	def add(self, name='', description='', extra_params=None):
 		if not name:

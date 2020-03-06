@@ -73,13 +73,14 @@ class Phpclass:
 
 	def context_data(self):
 		methods = '\n\n'.join(m.generate() for m in self.methods)
-		if methods:
-			methods = '\n' + methods
 
 		if self.attributes:
-			attributes = '\n\t' + '\n\t'.join(self.attributes) + '\n'
+			attributes = '\t' + '\n\n\t'.join(self.attributes) + '\n'
 		else:
 			attributes = ''
+
+		if attributes:
+			methods = '\n' + methods
 
 		dependencies = ';\n'.join("use %s" %(dependency) for dependency in self.dependencies)
 		if dependencies:
@@ -163,10 +164,10 @@ class Phpmethod:
 
 	def docstring_code(self):
 		if not self.docstring:
-			return '';
+			return ''
 
 		docstring = '/**'
-		docstring +=  '\n\t *' + '\n\t *'.join(" {}".format(line.strip()) if len(line.strip()) else '' for line in self.docstring)
+		docstring += '\n\t *' + '\n\t *'.join(" {}".format(line.strip()) if len(line.strip()) else '' for line in self.docstring)
 		docstring += '\n\t */\n\t'
 		return docstring
 
@@ -559,7 +560,7 @@ class Module:
 
 		# minimum requirements for Magento2 module
 		etc_module = Xmlnode('config', attributes={'xsi:noNamespaceSchemaLocation':"urn:magento:framework:Module/etc/module.xsd"}, nodes=[
-			Xmlnode('module', attributes={'name': self.module_name, 'setup_version': '1.0.0'})
+			Xmlnode('module', attributes={'name': self.module_name})
 		])
 		self.add_xml('etc/module.xml', etc_module)
 

@@ -20,3 +20,5 @@ from .snippet import Snippet, SnippetParam
 
 # Load snippets
 from . import snippets
+
+# Load lib

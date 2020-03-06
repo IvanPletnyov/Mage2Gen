@@ -26,6 +26,8 @@ class WidgetSnippet(Snippet):
 	
 	"""
 
+	snippet_label = 'Widget'
+
 	TYPE_CHOISES = [
 		('text', 'Text'),
 		('select', 'Select'),

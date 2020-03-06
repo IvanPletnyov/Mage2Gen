@@ -45,6 +45,8 @@ class CronjobSnippet(Snippet):
 
     """
 
+	snippet_label = 'Cron job'
+
 	def add(self, cronjob_class, schedule='*/5 * * * *', cronjob_group='default', extra_params=None):
 
 		crontab_class = Phpclass('Cron\\{}'.format(upperfirst(cronjob_class)), attributes=[
@@ -71,7 +73,7 @@ class CronjobSnippet(Snippet):
             	'@return void',
             ]
 		))
-	
+
 		self.add_class(crontab_class)
 
 		crontab_xml = Xmlnode('config',attributes={'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance','xsi:noNamespaceSchemaLocation':"urn:magento:module:Magento_Cron:etc/crontab.xsd"},nodes=[
@@ -82,11 +84,11 @@ class CronjobSnippet(Snippet):
 						'name': "{}_{}".format(self.module_name, cronjob_class).lower(),
 						'instance': crontab_class.class_namespace,
 						'method': "execute",
-					}, 
+					},
 					nodes=[
 						Xmlnode('schedule',node_text=schedule)
 					]
-				)	
+				)
 			])
 		]);
 
@@ -103,8 +105,8 @@ class CronjobSnippet(Snippet):
 	def params(cls):
 		return [
 			SnippetParam(
-                name='cronjob_class', 
-                required=True, 
+                name='cronjob_class',
+                required=True,
                 description='Cronjob class',
                 regex_validator= r'^[a-zA-Z]{1}[a-zA-Z]+$',
                 error_message='Only alphanumeric are allowed, and need to start with a alphabetic character.'),
@@ -116,8 +118,8 @@ class CronjobSnippet(Snippet):
 				regex_validator=r'^[a-zA-Z]{1}[a-zA-Z]+$',
 				error_message='Only alphanumeric are allowed, and need to start with a alphabetic character.'),
 			SnippetParam(
-                name='schedule', 
-                required=True, 
+                name='schedule',
+                required=True,
                 default='*/5 * * * *',
                 description='Cron Schedule. For example */5 * * * *',
                 regex_validator= r'^([\d*,-/]+)\s+([\d*,-/]+)\s+([\d*,-/\?LW]+)\s+([\d\w*,-/]+)\s+([\d\w*,-/\?L#]+)\s*([\d\w*,-/]*)$',

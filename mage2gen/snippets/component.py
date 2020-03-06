@@ -22,6 +22,8 @@ class ComponentSnippet(Snippet):
 
 	description = """Create React Component"""
 
+	snippet_label = 'Component'
+
 	STYLE_CSS = 'css'
 	STYLE_SCSS = 'scss'
 

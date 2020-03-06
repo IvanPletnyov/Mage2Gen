@@ -39,6 +39,8 @@ class InstallSnippet(Snippet):
 	- Setup/UpgradeData  
 	"""
 
+	snippet_label = 'Install'
+
 	def add(self,from_version='1.0.0', extra_params=None):
 
 		install_schema = Phpclass('Setup\\InstallSchema',implements=['InstallSchemaInterface'],dependencies=[

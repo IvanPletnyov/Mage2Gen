@@ -1,0 +1,65 @@
+{
+  "save_path": "/var/www/dev.magento2.com/app/code",
+  "module": {
+    "package_name": "MyVendor",
+    "module_name": "MyModule",
+    "description": "Some description for module."
+  },
+  "snippets": {
+    "controller": {
+      "params": [
+				{
+          "frontname": "mymodule",
+          "section": "test",
+          "action": "index",
+          "adminhtml": false,
+          "ajax": false,
+          "top_level_menu": false
+        },
+        {
+          "frontname": "mymodule",
+          "section": "test",
+          "action": "index",
+          "adminhtml": true,
+          "ajax": false,
+          "top_level_menu": false
+        },
+				{
+          "frontname": "mymodule",
+          "section": "test",
+          "action": "ajax",
+          "adminhtml": false,
+          "ajax": true,
+          "top_level_menu": false
+        }
+      ]
+    },
+    "model": {
+      "params": [
+        {
+          "model_name": "Blog",
+          "field_name": "title",
+          "field_type": "text",
+          "adminhtml_grid": false,
+          "adminhtml_form": false,
+          "web_api": false,
+          "extra_params": {
+            "nullable": false,
+            "comment": "Some comment for title"
+          }
+        },
+        {
+          "model_name": "Blog",
+          "field_name": "number",
+          "field_type": "integer",
+          "adminhtml_grid": false,
+          "adminhtml_form": false,
+          "web_api": false,
+          "extra_params": {
+            "comment": "Some comment for number"
+          }
+        }
+      ]
+    }
+  }
+}

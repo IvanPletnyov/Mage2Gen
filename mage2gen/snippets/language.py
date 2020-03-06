@@ -31,6 +31,8 @@ class LanguageSnippet(Snippet):
 	a csv translation file in *i18n/en_US.csv*
 	"""
 
+	snippet_label = 'Language'
+
 	LANGUAGE_CHOISES = [
 		('af_ZA', 'Afrikaans (South Africa)'),
 		('sq_AL', 'Albanian (Albania)'),

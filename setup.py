@@ -10,8 +10,15 @@ def readme():
 setup(
 	name = 'Mage2Gen',
 	packages = ['mage2gen', 'mage2gen.snippets'],
-	package_data={'mage2gen': ['templates/*.tmpl', 'templates/payment/*.tmpl', 'templates/attributes/*.tmpl', 'licenses/*.txt']},
-	scripts=['bin/mage2gen'],
+	package_data={
+		'mage2gen': [
+			'templates/*.tmpl',
+			'templates/payment/*.tmpl',
+			'templates/attributes/*.tmpl',
+			'licenses/*.txt'
+		]
+	},
+	scripts=['bin/mage2genApi', 'bin/mage2gen'],
 	version = '2.3.3',
 	description = 'Magento 2 module generator',
 	long_description=readme(),
@@ -26,5 +33,7 @@ setup(
 	url = 'https://github.com/krukas/Mage2Gen',
 	download_url = 'https://github.com/krukas/Mage2Gen/releases/tag/2.3.3',
 	keywords = ['Magento', 'Magento2', 'module', 'generator', 'mage2gen'],
-	install_requires=[],
+	install_requires=[
+		'flask==0.10.1'
+	],
 )

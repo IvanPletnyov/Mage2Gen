@@ -54,6 +54,8 @@ class PluginSnippet(Snippet):
 
 	"""
 
+	snippet_label = 'Plugin'
+
 	TYPE_BEFORE = 'before'
 	TYPE_AFTER = 'after'
 	TYPE_AROUND = 'around'
